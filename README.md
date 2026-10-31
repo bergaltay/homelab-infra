@@ -1,12 +1,10 @@
 # homelab-infra
 
-My home server setup: a Proxmox host that runs services, and a separate ZFS-based NAS that is meant to hold the backups. This repo explains how it is put together, why, and which parts are still unfinished.
-
-It is a personal learning project at small scale, not a production system. Nothing here is benchmarked. Numbers are configuration facts or values reported by SMART/ZFS, and are labelled as such.
+My home server setup: a Proxmox host that runs self-hosted services and local LLMs, and a separate ZFS-based NAS that serves as the backup target. It is a personal learning project.
 
 ## Why I built it
 
-- Get hands-on networking and server administration experience.
+- Get hands-on networking and server administration experience at a small scale.
 - Replace external subscriptions with local equivalents.
 - Run my BIST stock-analysis pipeline on my own hardware.
 - Run LLMs locally and switch between different models.
@@ -29,37 +27,35 @@ flowchart LR
     end
     NAS[("NAS: ZFS backup target")]
   end
-  PVE -. "planned: push over SSH (syncoid / rsync)" .-> NAS
+  PVE -. "backups (being set up)" .-> NAS
   CF -- "pulls status and metrics" --> NAS
 ```
 
-| Part | What it is |
-|---|---|
-| Host | Proxmox VE on a repurposed X79 desktop platform: Xeon E5-2696 v2, 32 GB RAM, RTX 3060 12 GB passed through to one VM |
-| Guests | 8 VMs/LXCs. A Tailscale gateway, Nextcloud (4 users), a container platform hosting self-hosted apps, a GPU VM for local LLMs, a VM for the stock-analysis pipeline, an SMB share, and two game servers (not documented here) |
-| NAS | Separate machine: ECS NM70-I2 Mini-ITX, Celeron 1037U, Debian 13, ZFS. Passive backup target |
+## What runs
 
-## Status (31 Oct 2026)
+| Part | What it does |
+|---|---|
+| Proxmox host | Repurposed X79 desktop platform: Xeon E5-2696 v2, 32 GB RAM, RTX 3060 12 GB passed through to the LLM VM |
+| Tailscale gateway | Subnet router for remote access to the home network |
+| Nextcloud | File sync for four users |
+| Container platform | Coolify, hosting self-hosted apps such as git hosting, monitoring and PDF tools |
+| Local LLM serving | GPU VM running vLLM and Ollama behind a single gateway |
+| Stock-analysis pipeline | VM with a time-series database and object storage for my BIST analysis project |
+| SMB share | Network file share |
+| NAS | Separate ZFS machine for backups, with SMART and ZFS monitoring |
+
+Two game-server guests also run on the host and are not documented here.
+
+## Status
 
 | Component | State |
 |---|---|
-| Proxmox host and guests | Running. At the last audit (20 Oct) five guests were running and three were powered off |
-| ZFS mirror on the host | Running, but one member reports read errors. Replacement not done |
-| NAS: pools, snapshots, monitoring, firewall, Wake-on-LAN | Built and tested |
-| Replication from Proxmox to NAS | **Not started** |
-| Off-machine backup of host data | **None yet** |
-| Alert delivery (ntfy / Telegram / mail) | Not chosen. Alerts go to the journal and a log file only |
-| Remote access | Tailscale subnet router in a dedicated LXC |
-| 3D-printed NAS case (6x 2.5" bays, Fusion 360) | In design |
-
-Setup logs are kept on the machines and are not published.
+| Proxmox host and services | Running |
+| NAS (ZFS pools, monitoring, firewall, Wake-on-LAN) | Built |
+| Backups from host to NAS | Being set up |
+| 3D-printed NAS case (Fusion 360) | In design |
 
 ## Documents
 
-- [`docs/architecture.md`](docs/architecture.md): layers, storage tiers, what is lost if a disk fails, RAM budget.
-- [`docs/nas-backup-design.md`](docs/nas-backup-design.md): push-only backup model, least-privilege permissions, monitoring, what was tested.
-- [`docs/audit-and-lessons.md`](docs/audit-and-lessons.md): a self-audit of the host with findings that are still open, plus lessons from the build.
-
-## Scope
-
-Internal addresses, MAC addresses, disk serial numbers, port lists and firewall details are left out on purpose. Game servers are not covered.
+- [`docs/architecture.md`](docs/architecture.md): layers, storage and remote access.
+- [`docs/nas.md`](docs/nas.md): the NAS and the backup design.
